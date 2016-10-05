@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html data-ng-app="myApp">
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+</head><script
+        src="jquery-3.1.0.min.js" type="application/javascript"></script>
+
+<link REL="STYLESHEET" href="bootstrap.min.css">
+<link REL="STYLESHEET" href="stylesheets/style.css">
+<script type="application/javascript" src="bootstrap.min.js"></script>
+<style>
+
+    .sqaure{
+        cursor: pointer;
+        background: bisque;
+        height: 100px;
+        width: 100px;
+        float: left;
+        margin: 5px 5px 5px 5px;
+        background-repeat: no-repeat;
+        background-size: 100px 100px;
+
+    }
+    
+    .sqaure2{
+        background-image: url('images/DeleteRed.png');
+        background-repeat: no-repeat;
+        background-size: 100px 100px;
+        cursor: auto;
+        height: 100px;
+        width: 100px;
+        float: left;
+        margin: 5px 5px 5px 5px;
+    }
+
+    .sqaure3{
+        background-image: url('images/red-circle-icon.png');
+        background-repeat: no-repeat;
+        background-size: 100px 100px;
+        cursor: auto;
+        height: 100px;
+        width: 100px;
+        float: left;
+        margin: 5px 5px 5px 5px;
+    }
+
+</style>
+<body>
+
+<!--
+User Profile Sidebar by @keenthemes
+A component of Metronic Theme - #1 Selling Bootstrap 3 Admin Theme in Themeforest: http://j.mp/metronictheme
+Licensed under MIT
+-->
+
+<div class="container">
+    <div class="row profile">
+        <div class="col-md-3">
+            <div class="profile-sidebar">
+                <!-- SIDEBAR USERPIC -->
+                <div class="profile-userpic">
+                    <img src="https://static.apkupdate.com/images/cover/very.gottchaanonym.inweb.png" class="img-responsive" alt="">
+                </div>
+                <!-- END SIDEBAR USERPIC -->
+                <!-- SIDEBAR USER TITLE -->
+                <div class="profile-usertitle">
+                    <input type="text" id="name" class="profile-usertitle-job">
+                    <span ></span>
+                    <div id="username" class="profile-usertitle-name">
+                    </div>
+                </div>
+                <!-- END SIDEBAR USER TITLE -->
+                <!-- SIDEBAR BUTTONS -->
+                <div class="profile-userbuttons">
+                    <button type="button" id="submitButton" class="btn btn-success btn-sm">start Game</button>
+                </div>
+                <!-- END SIDEBAR BUTTONS -->
+                <!-- SIDEBAR MENU -->
+                <div class="profile-usermenu">
+                    <ul id="nav" class="nav">
+
+                    </ul>
+                </div>
+                <!-- END MENU -->
+            </div>
+        </div>
+        <div class="col-md-9">
+            <div class="profile-content">
+                <div id="1" class="sqaure"></div>
+                <div id="2" class="sqaure"></div>
+                <div  id="3" class="sqaure"></div>
+                <div  class="clearfix"></div>
+                <div id="4" class="sqaure"></div>
+                <div id="5" class="sqaure"></div>
+                <div id="6" class="sqaure"></div>
+
+                <div  class="clearfix"></div>
+                <div id="7" class="sqaure"></div>
+                <div id="8" class="sqaure"></div>
+                <div id="9" class="sqaure"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<center>
+    <strong>Powered by harshad</strong>
+</center>
+<br>
+<br>
+
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+
+    var winningSet = [[1,2,3],[4,5,6],[7,8,9],[2,5,8],[1,4,7],[3,6,9],[1,5,9],[3,5,7]];
+    var mySet = [];
+
+    var isYourTurn = false;
+    var socket = io.connect('http://192.168.1.3:3000');
+    socket.on('connected', function (data) {
+        console.log('you are in bro');
+        socket.emit('data', { my: 'data' });
+    });
+
+    $('#submitButton').on('click', function(){
+        $(this).remove();
+
+        $('#username').text($('#name').val());
+        socket.emit('startGame',{'name': $("#name").val()});
+        $('#name').remove();
+
+    });
+
+    socket.on('newGamer', function(data){
+        console.log('new member is : '+data.name);
+        isYourTurn = true;
+    });
+
+
+    var users = [];
+    socket.on('list',function(data){
+        var newList = '';
+        users = data;
+        data.list.forEach(function(single){
+            newList += '<li><a id="'+single.id+'">'+single.name+'</a></li>';
+        });
+        console.log('new list'+newList);
+        $('#nav').html(newList);
+    });
+
+    var whoMI = 'sqaure2';
+    $('.sqaure').on('click',function(){
+        if(isYourTurn){
+            mySet.push($(this).attr('id'));
+            var isWin = checkImDone();
+            console.log(isWin);
+            if(isWin){
+                    mySet = [];
+                    socket.emit('myTurnOver', { "move": $(this).attr('id'), 'id' : socket.id , 'me' : whoMI, 'looser':true});
+                    alert('i\m winner');
+            }else{
+
+
+                $(this).addClass(whoMI).removeClass('sqaure');
+                socket.emit('myTurnOver', { "move": $(this).attr('id'), 'id' : socket.id , 'me' : whoMI});
+                isYourTurn = false;
+            }
+            if(mySet.length > 5){
+                socket.emit('drow');
+                mySet = [];
+            }
+        }
+    });
+
+    var checkImDone = function(){
+        var isWin = false;
+        winningSet.forEach(function(winningObject){/*
+            console.log(mySet +'------'+winningObject);
+            console.log(mySet.indexOf(winningObject[0]));
+            console.log(mySet.indexOf(winningObject[0]));
+            console.log(mySet.indexOf(winningObject[1]));
+            console.log(mySet.indexOf(winningObject[2]));*/
+
+            if(mySet.indexOf(winningObject[0].toString()) > -1 &&
+                    mySet.indexOf(winningObject[1].toString()) > -1 &&
+                    mySet.indexOf(winningObject[2].toString()) > -1){
+                console.log('winner.....');
+                isWin = true;
+            }
+        });
+        return isWin;
+        console.log("fail")
+    };
+
+    socket.on('nowYourTurn', function(data){
+        if(data.id != socket.id){
+            $('#'+data.move).addClass(data.me).removeClass('sqaure');
+            if(data.me == 'sqaure2'){
+                whoMI = 'sqaure3';
+            }
+            isYourTurn = true;
+        }
+    });
+
+    socket.on('text', function(data){
+        console.log(data);
+    });
+</script>
+</body>
+</html>
